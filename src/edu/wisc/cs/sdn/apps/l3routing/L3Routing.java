@@ -84,8 +84,8 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 				OFMatch match = new OFMatch()
 					.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
 					.setNetworkDestination(host.getIPv4Address());
-				//match.setNonWildcards(EnumSet.of(OFOXMFieldType.IPV4_DST));
-				OFAction action = new OFActionOutput().setPort(predEntry.getValue().getDstPort());
+				log.error("MATCH: " + match);
+				OFAction action = new OFActionOutput().setPort(predEntry.getValue().getSrcPort());
 				OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
 
 				SwitchCommands.installRule(srcSwitch, table, (short) 0, match, Arrays.asList(applyActions));
@@ -95,8 +95,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 			OFMatch match = new OFMatch()
 					.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
 					.setNetworkDestination(host.getIPv4Address());
-			//match.setNonWildcards(EnumSet.of(OFOXMFieldType.IPV4_DST));
-			log.error("MATCH: " + match);
+//			log.error("MATCH: " + match);
 			OFAction action = new OFActionOutput().setPort(host.getPort());
 			OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
 			SwitchCommands.installRule(srcSwitch, table, (short) 0, match, Arrays.asList(applyActions));
