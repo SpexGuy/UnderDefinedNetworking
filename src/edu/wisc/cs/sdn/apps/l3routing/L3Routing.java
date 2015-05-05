@@ -71,7 +71,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 				for (Link link : getLinks()) {
 					if (!predMap.containsKey(link.getSrc())) {
 						if (link.getDst() == switchId) {
-							predMap.put(switchId, link);
+							predMap.put(link.getSrc(), link);
 							frontier.add(link.getSrc());
 						}
 					}
