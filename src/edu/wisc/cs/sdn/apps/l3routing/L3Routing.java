@@ -81,8 +81,9 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 			for (Map.Entry<Long, Link> predEntry : predMap.entrySet()) {
 				log.error("switchId: " + predEntry.getKey() + " -> " + predEntry.getValue());
 				IOFSwitch srcSwitch = getSwitches().get(predEntry.getKey());
-				OFMatch match = new OFMatch().setNetworkDestination(host.getIPv4Address());
-				match.setDataLayerType(OFMatch.ETH_TYPE_IPV4);
+				OFMatch match = new OFMatch()
+					.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
+					.setNetworkDestination(host.getIPv4Address());
 				//match.setNonWildcards(EnumSet.of(OFOXMFieldType.IPV4_DST));
 				OFAction action = new OFActionOutput().setPort(predEntry.getValue().getDstPort());
 				OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
@@ -91,8 +92,9 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 			}
 
 			IOFSwitch srcSwitch = host.getSwitch();
-			OFMatch match = new OFMatch().setNetworkDestination(host.getIPv4Address());
-			match.setDataLayerType(OFMatch.ETH_TYPE_IPV4);
+			OFMatch match = new OFMatch()
+					.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
+					.setNetworkDestination(host.getIPv4Address());
 			//match.setNonWildcards(EnumSet.of(OFOXMFieldType.IPV4_DST));
 			log.error("MATCH: " + match);
 			OFAction action = new OFActionOutput().setPort(host.getPort());
