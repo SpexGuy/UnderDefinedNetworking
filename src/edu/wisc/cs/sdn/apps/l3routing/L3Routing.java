@@ -1,17 +1,22 @@
 package edu.wisc.cs.sdn.apps.l3routing;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+import edu.wisc.cs.sdn.apps.util.SwitchCommands;
+import net.floodlightcontroller.devicemanager.SwitchPort;
+import org.openflow.protocol.OFMatch;
+import org.openflow.protocol.action.OFAction;
+import org.openflow.protocol.action.OFActionOutput;
+import org.openflow.protocol.action.OFActionType;
+import org.openflow.protocol.instruction.OFInstruction;
+import org.openflow.protocol.instruction.OFInstructionActions;
+import org.openflow.protocol.instruction.OFInstructionApplyActions;
+import org.openflow.protocol.instruction.OFInstructionType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import edu.wisc.cs.sdn.apps.util.Host;
-
 import net.floodlightcontroller.core.IFloodlightProviderService;
 import net.floodlightcontroller.core.IOFSwitch;
 import net.floodlightcontroller.core.IOFSwitch.PortChangeType;
@@ -126,6 +131,34 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 			
 			/*****************************************************************/
 		}
+
+		// switchId to link
+		Map<Long, Link> predMap = new HashMap<Long, Link>();
+
+		LinkedList<Long> frontier = new LinkedList<Long>();
+		frontier.add(host.getSwitch().getId());
+		while (!frontier.isEmpty()) {
+			Long switchId = frontier.remove();
+			for (Link link : getLinks()) {
+				if (!predMap.containsKey(link.getSrc())) {
+					if (link.getDst() == switchId) {
+						predMap.put(switchId, link);
+						frontier.add(link.getSrc());
+					}
+				}
+			}
+		}
+
+		for (Map.Entry<Long, Link> predEntry : predMap.entrySet()) {
+			System.out.println("switchId: " + predEntry.getKey() + " -> " + predEntry.getValue());
+			IOFSwitch srcSwitch = getSwitches().get(predEntry.getKey());
+			// IOFSwitch dstSwitch = getSwitches().get(predEntry.getValue().getDst());
+			OFMatch match = new OFMatch().setNetworkDestination(host.getIPv4Address());
+			OFAction action = new OFActionOutput().setPort(predEntry.getValue().getDstPort());
+			OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
+
+			SwitchCommands.installRule(srcSwitch, table, (short) 0, match, Arrays.asList(applyActions));
+		}
 	}
 
 	/**
@@ -179,7 +212,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 	
     /**
      * Event handler called when a switch joins the network.
-     * @param DPID for the switch
+     * @param switchId for the switch
      */
 	@Override		
 	public void switchAdded(long switchId) 
@@ -195,7 +228,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 
 	/**
 	 * Event handler called when a switch leaves the network.
-	 * @param DPID for the switch
+	 * @param switchId for the switch
 	 */
 	@Override
 	public void switchRemoved(long switchId) 
@@ -218,6 +251,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 	{
 		for (LDUpdate update : updateList)
 		{
+			UpdateOperation op = update.getOperation();
 			// If we only know the switch & port for one end of the link, then
 			// the link must be from a switch to a host
 			if (0 == update.getDst())
@@ -238,6 +272,9 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		/* TODO: Update routing: change routing rules for all hosts          */
 		
 		/*********************************************************************/
+		// Bellman ford
+
+		// Update all rules
 	}
 
 	/**
@@ -266,7 +303,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 	
 	/**
 	 * Event handler called when the controller becomes the master for a switch.
-	 * @param DPID for the switch
+	 * @param switchId for the switch
 	 */
 	@Override
 	public void switchActivated(long switchId) 
@@ -274,7 +311,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 
 	/**
 	 * Event handler called when some attribute of a switch changes.
-	 * @param DPID for the switch
+	 * @param switchId for the switch
 	 */
 	@Override
 	public void switchChanged(long switchId) 
@@ -283,7 +320,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 	/**
 	 * Event handler called when a port on a switch goes up or down, or is
 	 * added or removed.
-	 * @param DPID for the switch
+	 * @param switchId for the switch
 	 * @param port the port on the switch whose status changed
 	 * @param type the type of status change (up, down, add, remove)
 	 */
