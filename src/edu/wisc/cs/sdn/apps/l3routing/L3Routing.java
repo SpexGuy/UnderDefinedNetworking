@@ -87,11 +87,11 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 				SwitchCommands.installRule(srcSwitch, table, (short) 0, match, Arrays.asList(applyActions));
 			}
 
-			//IOFSwitch srcSwitch = host.getSwitch();
-			//OFMatch match = new OFMatch().setNetworkDestination(host.getIPv4Address());
-			//OFAction action = new OFActionOutput().setPort(host.getSwitch().);
-			//OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
-
+			IOFSwitch srcSwitch = host.getSwitch();
+			OFMatch match = new OFMatch().setNetworkDestination(host.getIPv4Address());
+			OFAction action = new OFActionOutput().setPort(host.getPort());
+			OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
+			SwitchCommands.installRule(srcSwitch, table, (short) 0, match, Arrays.asList(applyActions));
 		}
 	}
 
