@@ -80,13 +80,18 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 			for (Map.Entry<Long, Link> predEntry : predMap.entrySet()) {
 				log.error("switchId: " + predEntry.getKey() + " -> " + predEntry.getValue());
 				IOFSwitch srcSwitch = getSwitches().get(predEntry.getKey());
-				// IOFSwitch dstSwitch = getSwitches().get(predEntry.getValue().getDst());
 				OFMatch match = new OFMatch().setNetworkDestination(host.getIPv4Address());
 				OFAction action = new OFActionOutput().setPort(predEntry.getValue().getDstPort());
 				OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
 
 				SwitchCommands.installRule(srcSwitch, table, (short) 0, match, Arrays.asList(applyActions));
 			}
+
+			//IOFSwitch srcSwitch = host.getSwitch();
+			//OFMatch match = new OFMatch().setNetworkDestination(host.getIPv4Address());
+			//OFAction action = new OFActionOutput().setPort(host.getSwitch().);
+			//OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
+
 		}
 	}
 
@@ -159,7 +164,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		// We only care about a new host if we know its IP
 		if (host.getIPv4Address() != null)
 		{
-			log.info(String.format("Host %s added", host.getName()));
+			log.info(String.format("Host %s added with port %d", host.getName(), host.getPort()));
 			this.knownHosts.put(device, host);
 			
 			/*****************************************************************/
