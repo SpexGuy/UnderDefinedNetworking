@@ -60,6 +60,10 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 	private void updateRules() {
 		log.error("COUNTING THE RULE BEFORE THEY'VE HATCHED");
 
+		for (IOFSwitch s : getSwitches().values()) {
+			SwitchCommands.removeRules(s, table, new OFMatch());
+		}
+
 		for (Host host : knownHosts.values()) {
 			// switchId to link
 			Map<Long, Link> predMap = new HashMap<Long, Link>();
