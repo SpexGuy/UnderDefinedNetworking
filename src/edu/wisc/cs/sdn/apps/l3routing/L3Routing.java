@@ -80,7 +80,8 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 
 			for (Map.Entry<Long, Link> predEntry : predMap.entrySet()) {
 				log.error("switchId: " + predEntry.getKey() + " -> " + predEntry.getValue());
-				IOFSwitch srcSwitch = getSwitches().get(predEntry.getKey());
+				//IOFSwitch srcSwitch = getSwitches().get(predEntry.getKey());
+				IOFSwitch dstSwitch = getSwitches().get(predEntry.getValue().getSrc());
 				OFMatch match = new OFMatch()
 					.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
 					.setNetworkDestination(host.getIPv4Address());
@@ -88,7 +89,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 				OFAction action = new OFActionOutput().setPort(predEntry.getValue().getSrcPort());
 				OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
 
-				SwitchCommands.installRule(srcSwitch, table, (short) 0, match, Arrays.asList(applyActions));
+				SwitchCommands.installRule(dstSwitch, table, (short) 0, match, Arrays.asList(applyActions));
 			}
 
 			IOFSwitch srcSwitch = host.getSwitch();
