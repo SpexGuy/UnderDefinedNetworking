@@ -89,7 +89,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 				OFMatch match = new OFMatch()
 					.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
 					.setNetworkDestination(host.getIPv4Address());
-				log.error("MATCH: " + match);
+				//log.error("MATCH: " + match);
 				OFAction action = new OFActionOutput().setPort(predEntry.getValue().getSrcPort());
 				OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
 
