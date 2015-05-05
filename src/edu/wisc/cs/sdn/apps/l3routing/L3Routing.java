@@ -56,6 +56,40 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
     // Map of hosts to devices
     private Map<IDevice,Host> knownHosts;
 
+	private void updateRules() {
+		log.error("COUNTING THE RULE BEFORE THEY'VE HATCHED");
+
+		for (Host host : knownHosts.values()) {
+			// switchId to link
+			Map<Long, Link> predMap = new HashMap<Long, Link>();
+
+			LinkedList<Long> frontier = new LinkedList<Long>();
+			frontier.add(host.getSwitch().getId());
+			while (!frontier.isEmpty()) {
+				Long switchId = frontier.remove();
+				for (Link link : getLinks()) {
+					if (!predMap.containsKey(link.getSrc())) {
+						if (link.getDst() == switchId) {
+							predMap.put(switchId, link);
+							frontier.add(link.getSrc());
+						}
+					}
+				}
+			}
+
+			for (Map.Entry<Long, Link> predEntry : predMap.entrySet()) {
+				System.out.println("switchId: " + predEntry.getKey() + " -> " + predEntry.getValue());
+				IOFSwitch srcSwitch = getSwitches().get(predEntry.getKey());
+				// IOFSwitch dstSwitch = getSwitches().get(predEntry.getValue().getDst());
+				OFMatch match = new OFMatch().setNetworkDestination(host.getIPv4Address());
+				OFAction action = new OFActionOutput().setPort(predEntry.getValue().getDstPort());
+				OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
+
+				SwitchCommands.installRule(srcSwitch, table, (short) 0, match, Arrays.asList(applyActions));
+			}
+		}
+	}
+
 	/**
      * Loads dependencies and initializes data structures.
      */
@@ -91,6 +125,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		/* TODO: Initialize variables or perform startup tasks, if necessary */
 		
 		/*********************************************************************/
+		updateRules();
 	}
 	
     /**
@@ -132,34 +167,35 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 			
 			/*****************************************************************/
 		}
+		updateRules();
 
 		// switchId to link
-		Map<Long, Link> predMap = new HashMap<Long, Link>();
-
-		LinkedList<Long> frontier = new LinkedList<Long>();
-		frontier.add(host.getSwitch().getId());
-		while (!frontier.isEmpty()) {
-			Long switchId = frontier.remove();
-			for (Link link : getLinks()) {
-				if (!predMap.containsKey(link.getSrc())) {
-					if (link.getDst() == switchId) {
-						predMap.put(switchId, link);
-						frontier.add(link.getSrc());
-					}
-				}
-			}
-		}
-
-		for (Map.Entry<Long, Link> predEntry : predMap.entrySet()) {
-			System.out.println("switchId: " + predEntry.getKey() + " -> " + predEntry.getValue());
-			IOFSwitch srcSwitch = getSwitches().get(predEntry.getKey());
-			// IOFSwitch dstSwitch = getSwitches().get(predEntry.getValue().getDst());
-			OFMatch match = new OFMatch().setNetworkDestination(host.getIPv4Address());
-			OFAction action = new OFActionOutput().setPort(predEntry.getValue().getDstPort());
-			OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
-
-			SwitchCommands.installRule(srcSwitch, table, (short) 0, match, Arrays.asList(applyActions));
-		}
+//		Map<Long, Link> predMap = new HashMap<Long, Link>();
+//
+//		LinkedList<Long> frontier = new LinkedList<Long>();
+//		frontier.add(host.getSwitch().getId());
+//		while (!frontier.isEmpty()) {
+//			Long switchId = frontier.remove();
+//			for (Link link : getLinks()) {
+//				if (!predMap.containsKey(link.getSrc())) {
+//					if (link.getDst() == switchId) {
+//						predMap.put(switchId, link);
+//						frontier.add(link.getSrc());
+//					}
+//				}
+//			}
+//		}
+//
+//		for (Map.Entry<Long, Link> predEntry : predMap.entrySet()) {
+//			System.out.println("switchId: " + predEntry.getKey() + " -> " + predEntry.getValue());
+//			IOFSwitch srcSwitch = getSwitches().get(predEntry.getKey());
+//			// IOFSwitch dstSwitch = getSwitches().get(predEntry.getValue().getDst());
+//			OFMatch match = new OFMatch().setNetworkDestination(host.getIPv4Address());
+//			OFAction action = new OFActionOutput().setPort(predEntry.getValue().getDstPort());
+//			OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
+//
+//			SwitchCommands.installRule(srcSwitch, table, (short) 0, match, Arrays.asList(applyActions));
+//		}
 	}
 
 	/**
@@ -182,6 +218,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		/* TODO: Update routing: remove rules to route to host               */
 		
 		/*********************************************************************/
+		updateRules();
 	}
 
 	/**
@@ -211,6 +248,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		/* TODO: Update routing: change rules to route to host               */
 		
 		/*********************************************************************/
+		updateRules();
 	}
 	
     /**
@@ -228,6 +266,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		/* TODO: Update routing: change routing rules for all hosts          */
 		
 		/*********************************************************************/
+		updateRules();
 	}
 
 	/**
@@ -245,6 +284,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		/* TODO: Update routing: change routing rules for all hosts          */
 		
 		/*********************************************************************/
+		updateRules();
 	}
 
 	/**
@@ -281,7 +321,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		/*********************************************************************/
 		// Bellman ford
 
-		// Update all rules
+		updateRules();
 	}
 
 	/**
