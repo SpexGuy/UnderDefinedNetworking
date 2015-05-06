@@ -238,9 +238,11 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				int supplierIp = inst.getNextHostIP();
 				SwitchCommands.installRule(sw, table, (short) 2,
 					new OFMatch()
-						.setNetworkSource(OFMatch.ETH_TYPE_IPV4, ipRequest.getSourceAddress())
+						.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
+						.setNetworkSource(ipRequest.getSourceAddress())
 						.setNetworkDestination(ipRequest.getDestinationAddress())
-						.setTransportSource(OFMatch.IP_PROTO_TCP, tcpRequest.getSourcePort())
+						.setNetworkProtocol(OFMatch.IP_PROTO_TCP)
+						.setTransportSource(tcpRequest.getSourcePort())
 						.setTransportDestination(tcpRequest.getDestinationPort()),
 					Arrays.asList((OFInstruction) new OFInstructionApplyActions().setActions(Arrays.asList(
 							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.ETH_DST, getHostMACAddress(supplierIp))),
@@ -248,9 +250,11 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				))), SwitchCommands.NO_TIMEOUT, (short) 20);
 				SwitchCommands.installRule(sw, table, (short) 2,
 					new OFMatch()
-						.setNetworkSource(OFMatch.ETH_TYPE_IPV4, supplierIp)
+						.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
+						.setNetworkSource(supplierIp)
 						.setNetworkDestination(ipRequest.getSourceAddress())
-						.setTransportSource(OFMatch.IP_PROTO_TCP, tcpRequest.getDestinationPort())
+						.setNetworkProtocol(OFMatch.IP_PROTO_TCP)
+						.setTransportSource(tcpRequest.getDestinationPort())
 						.setTransportDestination(tcpRequest.getSourcePort()),
 					Arrays.asList((OFInstruction) new OFInstructionApplyActions().setActions(Arrays.asList(
 						(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.ETH_SRC, inst.getVirtualMAC())),
