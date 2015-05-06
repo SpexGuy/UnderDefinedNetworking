@@ -218,7 +218,8 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				arp.setOpCode(ARP.OP_REPLY);
 				arp.setHardwareType(ARP.HW_TYPE_ETHERNET);
 				arp.setHardwareAddressLength((byte) 6);
-				arp.setSenderHardwareAddress(instances.get(IPv4.toIPv4Address(arpRequest.getTargetProtocolAddress())).getVirtualMAC());
+				arp.setSenderHardwareAddress(mac);
+				// arp.setSenderHardwareAddress(instances.get(IPv4.toIPv4Address(arpRequest.getTargetProtocolAddress())).getVirtualMAC());
 				arp.setTargetHardwareAddress(arpRequest.getSenderHardwareAddress());
 				arp.setProtocolType(ARP.PROTO_TYPE_IP);
 				arp.setProtocolAddressLength((byte) 4);
