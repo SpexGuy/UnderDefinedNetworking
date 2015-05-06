@@ -61,7 +61,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		log.error("COUNTING THE RULE BEFORE THEY'VE HATCHED");
 
 		for (IOFSwitch s : getSwitches().values()) {
-			SwitchCommands.removeRules(s, table, new OFMatch());
+			SwitchCommands.removeRules(s, table, new OFMatch().setDataLayerType(OFMatch.ETH_TYPE_IPV4));
 		}
 
 		for (Host host : knownHosts.values()) {
