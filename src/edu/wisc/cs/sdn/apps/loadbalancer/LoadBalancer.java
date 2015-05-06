@@ -178,6 +178,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 	public net.floodlightcontroller.core.IListener.Command receive(
 			IOFSwitch sw, OFMessage msg, FloodlightContext cntx) 
 	{
+		log.error("Recieved msg");
 		// We're only interested in packet-in messages
 		if (msg.getType() != OFType.PACKET_IN)
 		{ return Command.CONTINUE; }
@@ -196,12 +197,15 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		
 		/*********************************************************************/
 
+
 		switch (ethPkt.getEtherType()) {
 			case OFMatch.ETH_TYPE_ARP:
 				ARP arpRequest = (ARP) ethPkt.getPayload();
 
-				if (!instances.containsKey(arpRequest.getTargetProtocolAddress()))
+				if (!instances.containsKey(IPv4.toIPv4Address(arpRequest.getTargetProtocolAddress()))) {
+					log.error("Dropping arp request... " + IPv4.toIPv4Address(arpRequest.getTargetProtocolAddress()) + " not vIP");
 					return Command.STOP;
+				}
 
 				int inPort = ((OFPacketIn) msg).getInPort();
 				byte[] mac = sw.getPort(inPort).getHardwareAddress();
@@ -254,6 +258,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				))), SwitchCommands.NO_TIMEOUT, (short) 20);
 				break;
 			default:
+				log.error("ignoring packet of type" + ethPkt.getEtherType());
 				break; // Ignore other packets...
 		}
 
