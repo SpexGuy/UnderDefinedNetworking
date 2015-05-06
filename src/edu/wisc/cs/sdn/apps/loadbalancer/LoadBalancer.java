@@ -139,6 +139,9 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 
 		// Virtual IP redirect rule (1)
 		for (Integer virtualIp : instances.keySet()) {
+
+			log.error(String.format("adding redirect for vIP %08x", virtualIp));
+
 			OFMatch match = new OFMatch()
 					.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
 					.setNetworkDestination(virtualIp);
