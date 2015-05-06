@@ -220,6 +220,9 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				arp.setSenderProtocolAddress(arpRequest.getTargetProtocolAddress());
 				arp.setTargetProtocolAddress(arpRequest.getSenderProtocolAddress());
 				reply.setPayload(arp);
+
+				log.error(reply.toString());
+				
 				SwitchCommands.sendPacket(sw, (short) inPort, reply);
 				break;
 			case OFMatch.ETH_TYPE_IPV4:
