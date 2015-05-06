@@ -193,11 +193,9 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		
 		/*********************************************************************/
 
-		Ethernet request = new Ethernet();
 		switch (ethPkt.getEtherType()) {
 			case OFMatch.ETH_TYPE_ARP:
-				request.deserialize(((OFPacketIn) msg).getPacketData(), 0, ((OFPacketIn) msg).getTotalLength());
-				ARP arpRequest = (ARP) request.getPayload();
+				ARP arpRequest = (ARP) ethPkt.getPayload();
 
 				if (!instances.containsKey(arpRequest.getTargetProtocolAddress()))
 					return Command.STOP;
@@ -206,7 +204,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				byte[] mac = sw.getPort(inPort).getHardwareAddress();
 
 				Ethernet reply = new Ethernet();
-				reply.setDestinationMACAddress(request.getSourceMACAddress());
+				reply.setDestinationMACAddress(ethPkt.getSourceMACAddress());
 				reply.setSourceMACAddress(mac);
 				reply.setEtherType(Ethernet.TYPE_ARP);
 				ARP arp = new ARP();
@@ -226,8 +224,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				SwitchCommands.sendPacket(sw, (short) inPort, reply);
 				break;
 			case OFMatch.ETH_TYPE_IPV4:
-				request.deserialize(((OFPacketIn) msg).getPacketData(), 0, ((OFPacketIn) msg).getTotalLength());
-				IPv4 ipRequest = (IPv4) request.getPayload();
+				IPv4 ipRequest = (IPv4) ethPkt.getPayload();
 				TCP tcpRequest = (TCP) ipRequest.getPayload();
 
 				LoadBalancerInstance inst = instances.get(ipRequest.getDestinationAddress());

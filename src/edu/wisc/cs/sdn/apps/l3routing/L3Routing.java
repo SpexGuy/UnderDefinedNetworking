@@ -83,7 +83,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 			}
 
 			for (Map.Entry<Long, Link> predEntry : predMap.entrySet()) {
-				log.error("switchId: " + predEntry.getKey() + " -> " + predEntry.getValue());
+				//log.error("switchId: " + predEntry.getKey() + " -> " + predEntry.getValue());
 				//IOFSwitch srcSwitch = getSwitches().get(predEntry.getKey());
 				IOFSwitch dstSwitch = getSwitches().get(predEntry.getValue().getSrc());
 				OFMatch match = new OFMatch()
