@@ -218,8 +218,8 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				arp.setOpCode(ARP.OP_REPLY);
 				arp.setHardwareType(ARP.HW_TYPE_ETHERNET);
 				arp.setHardwareAddressLength((byte) 6);
-				arp.setSenderHardwareAddress(mac);
-				// arp.setSenderHardwareAddress(instances.get(IPv4.toIPv4Address(arpRequest.getTargetProtocolAddress())).getVirtualMAC());
+				//arp.setSenderHardwareAddress(mac);
+				arp.setSenderHardwareAddress(instances.get(IPv4.toIPv4Address(arpRequest.getTargetProtocolAddress())).getVirtualMAC());
 				arp.setTargetHardwareAddress(arpRequest.getSenderHardwareAddress());
 				arp.setProtocolType(ARP.PROTO_TYPE_IP);
 				arp.setProtocolAddressLength((byte) 4);
@@ -245,10 +245,13 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 						.setNetworkProtocol(OFMatch.IP_PROTO_TCP)
 						.setTransportSource(tcpRequest.getSourcePort())
 						.setTransportDestination(tcpRequest.getDestinationPort()),
-					Arrays.asList((OFInstruction) new OFInstructionApplyActions().setActions(Arrays.asList(
+					Arrays.asList(
+						(OFInstruction) new OFInstructionApplyActions().setActions(Arrays.asList(
 							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.ETH_DST, getHostMACAddress(supplierIp))),
-							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.IPV4_DST, supplierIp))
-				))), SwitchCommands.NO_TIMEOUT, (short) 20);
+							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.IPV4_DST, supplierIp)))),
+						(OFInstruction) new OFInstructionGotoTable(L3Routing.table)),
+					SwitchCommands.NO_TIMEOUT, (short) 20);
+
 				SwitchCommands.installRule(sw, table, (short) 2,
 					new OFMatch()
 						.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
@@ -257,10 +260,12 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 						.setNetworkProtocol(OFMatch.IP_PROTO_TCP)
 						.setTransportSource(tcpRequest.getDestinationPort())
 						.setTransportDestination(tcpRequest.getSourcePort()),
-					Arrays.asList((OFInstruction) new OFInstructionApplyActions().setActions(Arrays.asList(
-						(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.ETH_SRC, inst.getVirtualMAC())),
-						(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.IPV4_SRC, inst.getVirtualIP()))
-				))), SwitchCommands.NO_TIMEOUT, (short) 20);
+					Arrays.asList(
+						(OFInstruction) new OFInstructionApplyActions().setActions(Arrays.asList(
+							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.ETH_SRC, inst.getVirtualMAC())),
+							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.IPV4_SRC, inst.getVirtualIP())))),
+						(OFInstruction) new OFInstructionGotoTable(L3Routing.table)),
+					SwitchCommands.NO_TIMEOUT, (short) 20);
 				break;
 			default:
 				log.error("ignoring packet of type" + ethPkt.getEtherType());
