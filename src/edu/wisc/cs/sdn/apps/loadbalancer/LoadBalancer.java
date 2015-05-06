@@ -146,7 +146,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 			OFAction action = new OFActionOutput().setPort(OFPort.OFPP_CONTROLLER);
 			OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
 
-			SwitchCommands.installRule(sw, table, (short) 0, match, Arrays.asList(applyActions));
+			SwitchCommands.installRule(sw, table, (short) 1, match, Arrays.asList(applyActions));
 		}
 
 		// Arp packets redirect rule (2)
@@ -155,7 +155,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		//log.error("MATCH: " + match);
 		OFAction action = new OFActionOutput().setPort(OFPort.OFPP_CONTROLLER);
 		OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
-		SwitchCommands.installRule(sw, table, (short) 0, match, Arrays.asList(applyActions));
+		SwitchCommands.installRule(sw, table,  (short) 1, match, Arrays.asList(applyActions));
 
 		// next rule table
 		match = new OFMatch();
@@ -222,7 +222,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				reply.setPayload(arp);
 
 				log.error(reply.toString());
-				
+
 				SwitchCommands.sendPacket(sw, (short) inPort, reply);
 				break;
 			case OFMatch.ETH_TYPE_IPV4:
@@ -232,7 +232,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 
 				LoadBalancerInstance inst = instances.get(ipRequest.getDestinationAddress());
 				int supplierIp = inst.getNextHostIP();
-				SwitchCommands.installRule(sw, table, (short) 1,
+				SwitchCommands.installRule(sw, table, (short) 2,
 					new OFMatch()
 						.setNetworkSource(OFMatch.ETH_TYPE_IPV4, ipRequest.getSourceAddress())
 						.setNetworkDestination(ipRequest.getDestinationAddress())
@@ -242,7 +242,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.ETH_DST, getHostMACAddress(supplierIp))),
 							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.IPV4_DST, supplierIp))
 				))), SwitchCommands.NO_TIMEOUT, (short) 20);
-				SwitchCommands.installRule(sw, table, (short) 1,
+				SwitchCommands.installRule(sw, table, (short) 2,
 					new OFMatch()
 						.setNetworkSource(OFMatch.ETH_TYPE_IPV4, supplierIp)
 						.setNetworkDestination(ipRequest.getSourceAddress())
