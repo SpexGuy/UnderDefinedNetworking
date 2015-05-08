@@ -69,7 +69,8 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 			Map<Long, Link> predMap = new HashMap<Long, Link>();
 
 			LinkedList<Long> frontier = new LinkedList<Long>();
-			frontier.add(host.getSwitch().getId());
+			if (host.getSwitch() != null)
+				frontier.add(host.getSwitch().getId());
 			while (!frontier.isEmpty()) {
 				Long switchId = frontier.remove();
 				for (Link link : getLinks()) {
