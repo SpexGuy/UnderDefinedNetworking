@@ -67,7 +67,7 @@ public class L3Routing implements IFloodlightModule, IOFSwitchListener,
 		for (Host host : knownHosts.values()) {
 			if (host.getSwitch() == null)
 				continue;
-			
+
 			// switchId to link
 			Map<Long, Link> predMap = new HashMap<Long, Link>();
 
