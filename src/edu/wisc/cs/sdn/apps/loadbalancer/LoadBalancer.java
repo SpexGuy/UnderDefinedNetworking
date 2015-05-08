@@ -147,7 +147,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 			match = new OFMatch();
 			//log.error("MATCH: " + match);
 			applyActions = new OFInstructionGotoTable(L3Routing.table);
-			SwitchCommands.installRule(sw, table, SwitchCommands.MIN_PRIORITY, match, Arrays.asList(applyActions));
+			SwitchCommands.installRule(sw, table, (short) 1, match, Arrays.asList(applyActions));
 		}
 	}
 
@@ -176,7 +176,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		// default goto L3 routing rule
 		OFMatch matchAll = new OFMatch();
 		OFInstruction fallThrough = new OFInstructionGotoTable(L3Routing.table);
-		SwitchCommands.installRule(sw, table, (short) 1, matchAll, Arrays.asList(fallThrough));
+		SwitchCommands.installRule(sw, table, (short) 0, matchAll, Arrays.asList(fallThrough));
 
 	}
 	
@@ -225,26 +225,27 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 
 				int srcIp = IPv4.toIPv4Address(arpRequest.getSenderProtocolAddress());
 				int destIp = IPv4.toIPv4Address(arpRequest.getTargetProtocolAddress());
+				byte[] destMac = instances.get(destIp).getVirtualMAC();
 
 
 				int inPort = ((OFPacketIn) msg).getInPort();
 				byte[] mac = sw.getPort(inPort).getHardwareAddress();
 
-				Ethernet reply = new Ethernet();
 
-				reply.setDestinationMACAddress(ethPkt.getSourceMACAddress());
-				reply.setSourceMACAddress(instances.get(destIp).getVirtualMAC());
+				Ethernet reply = new Ethernet();
 				reply.setEtherType(Ethernet.TYPE_ARP);
+				reply.setDestinationMACAddress(ethPkt.getSourceMACAddress());
+				reply.setSourceMACAddress(destMac);
 
 				ARP arp = new ARP();
-				arp.setOpCode(ARP.OP_REPLY);
 				arp.setHardwareType(ARP.HW_TYPE_ETHERNET);
-				arp.setHardwareAddressLength((byte) Ethernet.DATALAYER_ADDRESS_LENGTH);
-				arp.setSenderHardwareAddress(instances.get(destIp).getVirtualMAC());
-				arp.setTargetHardwareAddress(ethPkt.getSourceMACAddress());
 				arp.setProtocolType(ARP.PROTO_TYPE_IP);
+				arp.setHardwareAddressLength((byte) Ethernet.DATALAYER_ADDRESS_LENGTH);
 				arp.setProtocolAddressLength((byte) 4);
+				arp.setOpCode(ARP.OP_REPLY);
+				arp.setSenderHardwareAddress(destMac);
 				arp.setSenderProtocolAddress(destIp);
+				arp.setTargetHardwareAddress(ethPkt.getSourceMACAddress());
 				arp.setTargetProtocolAddress(srcIp);
 				reply.setPayload(arp);
 
@@ -265,7 +266,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				LoadBalancerInstance inst = instances.get(ipRequest.getDestinationAddress());
 				int supplierIp = inst.getNextHostIP();
 				log.error("supplying IP: " + supplierIp + "for requested IP: " + inst.getVirtualIP());
-				SwitchCommands.installRule(sw, table, (short) 2,
+				SwitchCommands.installRule(sw, table, (short) 3,
 					new OFMatch()
 						.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
 						.setNetworkSource(ipRequest.getSourceAddress())
@@ -280,7 +281,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 						(OFInstruction) new OFInstructionGotoTable(L3Routing.table)),
 					SwitchCommands.NO_TIMEOUT, (short) 20);
 
-				SwitchCommands.installRule(sw, table, (short) 2,
+				SwitchCommands.installRule(sw, table, (short) 3,
 					new OFMatch()
 						.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
 						.setNetworkSource(supplierIp)
@@ -290,8 +291,8 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 						.setTransportDestination(tcpRequest.getSourcePort()),
 					Arrays.asList(
 						(OFInstruction) new OFInstructionApplyActions().setActions(Arrays.asList(
-							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.ETH_SRC, inst.getVirtualMAC())),
-							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.IPV4_SRC, inst.getVirtualIP())))),
+							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.ETH_SRC, ethPkt.getDestinationMAC())),
+							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.IPV4_SRC, ipRequest.getDestinationAddress())))),
 						(OFInstruction) new OFInstructionGotoTable(L3Routing.table)),
 					SwitchCommands.NO_TIMEOUT, (short) 20);
 				break;
