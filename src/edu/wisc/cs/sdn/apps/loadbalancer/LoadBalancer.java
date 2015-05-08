@@ -240,7 +240,6 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				arp.setOpCode(ARP.OP_REPLY);
 				arp.setHardwareType(ARP.HW_TYPE_ETHERNET);
 				arp.setHardwareAddressLength((byte) Ethernet.DATALAYER_ADDRESS_LENGTH);
-				//arp.setSenderHardwareAddress(mac);
 				arp.setSenderHardwareAddress(instances.get(destIp).getVirtualMAC());
 				arp.setTargetHardwareAddress(ethPkt.getSourceMACAddress());
 				arp.setProtocolType(ARP.PROTO_TYPE_IP);
@@ -257,6 +256,11 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				log.error("...of type IPV4");
 				IPv4 ipRequest = (IPv4) ethPkt.getPayload();
 				TCP tcpRequest = (TCP) ipRequest.getPayload();
+
+				if (tcpRequest.getFlags() != TCP_FLAG_SYN) {
+					log.error("Not SYN... falling through");
+					return Command.CONTINUE;
+				}
 
 				LoadBalancerInstance inst = instances.get(ipRequest.getDestinationAddress());
 				int supplierIp = inst.getNextHostIP();
