@@ -200,6 +200,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 
 		switch (ethPkt.getEtherType()) {
 			case OFMatch.ETH_TYPE_ARP:
+				log.error("\tof type arp");
 				ARP arpRequest = (ARP) ethPkt.getPayload();
 
 				if (!instances.containsKey(IPv4.toIPv4Address(arpRequest.getTargetProtocolAddress()))) {
@@ -232,11 +233,13 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				SwitchCommands.sendPacket(sw, (short) inPort, reply);
 				break;
 			case OFMatch.ETH_TYPE_IPV4:
+				log.error("\tof type IPV4");
 				IPv4 ipRequest = (IPv4) ethPkt.getPayload();
 				TCP tcpRequest = (TCP) ipRequest.getPayload();
 
 				LoadBalancerInstance inst = instances.get(ipRequest.getDestinationAddress());
 				int supplierIp = inst.getNextHostIP();
+				log.error("supplying IP: " + supplierIp "for requested IP: " + inst.getVirtualIP());
 				SwitchCommands.installRule(sw, table, (short) 2,
 					new OFMatch()
 						.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
