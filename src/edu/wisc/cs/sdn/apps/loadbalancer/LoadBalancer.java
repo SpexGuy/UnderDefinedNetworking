@@ -172,6 +172,12 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 
 		this.installVirtualIpRules(sw);
 		this.installArpRules(sw);
+
+		// default goto L3 routing rule
+		OFMatch matchAll = new OFMatch();
+		OFInstruction fallThrough = new OFInstructionGotoTable(L3Routing.table);
+		SwitchCommands.installRule(sw, table, (short) 1, matchAll, Arrays.asList(fallThrough));
+
 	}
 	
 	/**
