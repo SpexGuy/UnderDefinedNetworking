@@ -223,24 +223,30 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 					return Command.STOP;
 				}
 
+				int srcIp = IPv4.toIPv4Address(arpRequest.getSenderProtocolAddress());
+				int destIp = IPv4.toIPv4Address(arpRequest.getTargetProtocolAddress());
+
+
 				int inPort = ((OFPacketIn) msg).getInPort();
 				byte[] mac = sw.getPort(inPort).getHardwareAddress();
 
 				Ethernet reply = new Ethernet();
+
 				reply.setDestinationMACAddress(ethPkt.getSourceMACAddress());
-				reply.setSourceMACAddress(mac);
+				reply.setSourceMACAddress(instances.get(destIp).getVirtualMAC());
 				reply.setEtherType(Ethernet.TYPE_ARP);
+
 				ARP arp = new ARP();
 				arp.setOpCode(ARP.OP_REPLY);
 				arp.setHardwareType(ARP.HW_TYPE_ETHERNET);
-				arp.setHardwareAddressLength((byte) 6);
+				arp.setHardwareAddressLength((byte) Ethernet.DATALAYER_ADDRESS_LENGTH);
 				//arp.setSenderHardwareAddress(mac);
-				arp.setSenderHardwareAddress(instances.get(IPv4.toIPv4Address(arpRequest.getTargetProtocolAddress())).getVirtualMAC());
-				arp.setTargetHardwareAddress(arpRequest.getSenderHardwareAddress());
+				arp.setSenderHardwareAddress(instances.get(destIp).getVirtualMAC());
+				arp.setTargetHardwareAddress(ethPkt.getSourceMACAddress());
 				arp.setProtocolType(ARP.PROTO_TYPE_IP);
 				arp.setProtocolAddressLength((byte) 4);
-				arp.setSenderProtocolAddress(arpRequest.getTargetProtocolAddress());
-				arp.setTargetProtocolAddress(arpRequest.getSenderProtocolAddress());
+				arp.setSenderProtocolAddress(destIp);
+				arp.setTargetProtocolAddress(srcIp);
 				reply.setPayload(arp);
 
 				log.error(reply.toString());
