@@ -117,7 +117,40 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		
 		/*********************************************************************/
 	}
-	
+
+
+	private void installVirtualIpRules(IOFSwitch sw) {
+		for (Integer virtualIp : instances.keySet()) {
+
+			log.error(String.format("adding redirect for vIP %08x", virtualIp));
+
+			OFMatch match = new OFMatch()
+					.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
+					.setNetworkDestination(virtualIp)
+					.setNetworkProtocol(OFMatch.IP_PROTO_TCP);
+			OFAction action = new OFActionOutput().setPort(OFPort.OFPP_CONTROLLER);
+			OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
+
+			SwitchCommands.installRule(sw, table, (short) 1, match, Arrays.asList(applyActions));
+		}
+	}
+
+	private void installArpRules(IOFSwitch sw) {
+		for (LoadBalancerInstance inst : instances.values()) {
+			OFMatch match = new OFMatch()
+					.setDataLayerType(OFMatch.ETH_TYPE_ARP)
+					.setNetworkDestination(inst.getVirtualIP());
+			OFAction action = new OFActionOutput().setPort(OFPort.OFPP_CONTROLLER);
+			OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
+			SwitchCommands.installRule(sw, table, (short) 1, match, Arrays.asList(applyActions));
+			// next rule table
+			match = new OFMatch();
+			//log.error("MATCH: " + match);
+			applyActions = new OFInstructionGotoTable(L3Routing.table);
+			SwitchCommands.installRule(sw, table, SwitchCommands.MIN_PRIORITY, match, Arrays.asList(applyActions));
+		}
+	}
+
 	/**
      * Event handler called when a switch joins the network.
      * @param DPID for the switch
@@ -137,34 +170,8 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 		
 		/*********************************************************************/
 
-		// Virtual IP redirect rule (1)
-		for (Integer virtualIp : instances.keySet()) {
-
-			log.error(String.format("adding redirect for vIP %08x", virtualIp));
-
-			OFMatch match = new OFMatch()
-					.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
-					.setNetworkDestination(virtualIp);
-			//log.error("MATCH: " + match);
-			OFAction action = new OFActionOutput().setPort(OFPort.OFPP_CONTROLLER);
-			OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
-
-			SwitchCommands.installRule(sw, table, (short) 1, match, Arrays.asList(applyActions));
-		}
-
-		// Arp packets redirect rule (2)
-		OFMatch match = new OFMatch()
-				.setDataLayerType(OFMatch.ETH_TYPE_ARP);
-		//log.error("MATCH: " + match);
-		OFAction action = new OFActionOutput().setPort(OFPort.OFPP_CONTROLLER);
-		OFInstruction applyActions = new OFInstructionApplyActions().setActions(Arrays.asList(action));
-		SwitchCommands.installRule(sw, table,  (short) 1, match, Arrays.asList(applyActions));
-
-		// next rule table
-		match = new OFMatch();
-		//log.error("MATCH: " + match);
-		applyActions = new OFInstructionGotoTable(L3Routing.table);
-		SwitchCommands.installRule(sw, table, SwitchCommands.MIN_PRIORITY, match, Arrays.asList(applyActions));
+		this.installVirtualIpRules(sw);
+		this.installArpRules(sw);
 	}
 	
 	/**
@@ -180,8 +187,10 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 	{
 		log.error("Recieved msg");
 		// We're only interested in packet-in messages
-		if (msg.getType() != OFType.PACKET_IN)
-		{ return Command.CONTINUE; }
+		if (msg.getType() != OFType.PACKET_IN) {
+			log.error("NOT PACKET IN MESSAGE");
+			return Command.CONTINUE;
+		}
 		OFPacketIn pktIn = (OFPacketIn)msg;
 		
 		// Handle the packet
@@ -200,7 +209,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 
 		switch (ethPkt.getEtherType()) {
 			case OFMatch.ETH_TYPE_ARP:
-				log.error("\tof type arp");
+				log.error("...of type arp");
 				ARP arpRequest = (ARP) ethPkt.getPayload();
 
 				if (!instances.containsKey(IPv4.toIPv4Address(arpRequest.getTargetProtocolAddress()))) {
@@ -233,13 +242,13 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 				SwitchCommands.sendPacket(sw, (short) inPort, reply);
 				break;
 			case OFMatch.ETH_TYPE_IPV4:
-				log.error("\tof type IPV4");
+				log.error("...of type IPV4");
 				IPv4 ipRequest = (IPv4) ethPkt.getPayload();
 				TCP tcpRequest = (TCP) ipRequest.getPayload();
 
 				LoadBalancerInstance inst = instances.get(ipRequest.getDestinationAddress());
 				int supplierIp = inst.getNextHostIP();
-				log.error("supplying IP: " + supplierIp "for requested IP: " + inst.getVirtualIP());
+				log.error("supplying IP: " + supplierIp + "for requested IP: " + inst.getVirtualIP());
 				SwitchCommands.installRule(sw, table, (short) 2,
 					new OFMatch()
 						.setDataLayerType(OFMatch.ETH_TYPE_IPV4)
