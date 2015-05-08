@@ -291,7 +291,7 @@ public class LoadBalancer implements IFloodlightModule, IOFSwitchListener,
 						.setTransportDestination(tcpRequest.getSourcePort()),
 					Arrays.asList(
 						(OFInstruction) new OFInstructionApplyActions().setActions(Arrays.asList(
-							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.ETH_SRC, ethPkt.getDestinationMAC())),
+							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.ETH_SRC, ethPkt.getDestinationMACAddress())),
 							(OFAction) new OFActionSetField().setField(new OFOXMField(OFOXMFieldType.IPV4_SRC, ipRequest.getDestinationAddress())))),
 						(OFInstruction) new OFInstructionGotoTable(L3Routing.table)),
 					SwitchCommands.NO_TIMEOUT, (short) 20);
